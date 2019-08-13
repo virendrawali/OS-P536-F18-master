@@ -1,0 +1,21 @@
+
+1)What is Orphan and Zombie processes?
+  
+  Orphan Process => It is the state of the child process in which the parent process executes its code and exits before the child process completes execution. This will 		    result in the creation of Orphan process i.e. child process without the parent process. 
+
+  Zombie Process => This state of child process occurs when the child process has completed its function execution but the entry of the child process still present in a 		    process table. Until the parent process receives exit status from child process and acknowledge, the child process remains in Zombie state i.e. 
+		    execution is done but not exited.
+ 
+2)What are the changes that occur when the child process calls the exec system call to execute a new program?
+
+  When the child process is created by parent process by fork system call, it copies address space of parent. Exec is Unix system call which replaces text and user data  segments of child process which is calling exec, with text and user segments of the program which will be executed by exec system call. If an exec system call fails \  to execute the command it returns -1.
+
+****************************************************************************
+References:
+
+1)http://linuxg.net/what-are-zombie-and-orphan-processes-and-how-to-kill-them/
+2)http://beyondthegeek.com/2016/08/18/zombiedefunct-process-vs-orphan-process/
+3)http://www.cems.uwe.ac.uk/~irjohnso/coursenotes/lrc/system/pc/pc4.htm
+4)https://www.bottomupcs.com/fork_and_exec.xhtml
+****************************************************************************
+

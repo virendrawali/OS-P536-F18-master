@@ -1,0 +1,40 @@
+The assignment is to implement file system in Xinu, we need to implement 6 functions, fs_create, fs_open, fs_write, fs_seek,fs_read and fs_close which are the basic building blocks of file system. For this, we are just creating files and storing all the created files in root directory.
+
+Initially, set the attributes for device0 i.e. block size = 512 and number of blocks = 512. Then initialize all the attributes of file system apart from root directory as no file is presentin the root directory. Initialize first two blocks, as we are using those blocks for superblock and bitmask. Below are the initialized values of file system attributes:
+
+ Number of blocks: 	512
+ Size of each block : 	512
+ Number of inodes:	128
+ Inodes used:		0 
+ Device:		0 
+
+1) fs_create(char* filename, int mode ):
+
+   In fc_create, we need to initialize all the metadata information for new file. Create inode and file table for new file and initialize all the attributes. Set the values of inode_id,       inode_tpe, inode_size, inode blocks where the information about data blocks will be stored and set the bit for that inode_id using setmaskbit function. Set the attributes for file table    like file state, file pointer position, inode_number assigned to it and file name. After initializing the file table, store the file table for new file in open file directory table. Then   return the file descriptor i.e. index of open file directory array where we have saved the current file table. As first two block are assigned to superblock and bitmap, we are assigning    block to inode from block 3. 
+
+2) fs_open(char *filename, int flags):
+
+   In fs_open, we are checking if file is already present in the root directory, if file is present in root directory, we are creating new entry in open file directory table and               initializing all parameters. As file is already present in the root directory, we have stored the inode information in memory block, so extract the inode information using                  fs_get_inode_by_num and assign it to inode attribute of open file directory. Otherwise create a new file and follow the steps mentioned in fs_create.
+
+3) fs_write(int fd, void *buf, int nbytes):
+
+   In this function, we are writing the the number of bytes from buffer into the data blocks of file descriptor fd. For this, we extract the file table attributes for given file descriptor    from open file table directory.Then, check for empty inode blocks and set the value to block index of data block  to denote the block is assigned and use that block index to store the      file data. Use bs_write function to write the data in data block. If the data is less than block size i.e. 512 byte then we are writing data in data block. Otherwise store data in chunk    of 512 bytes. At the last, return the number of bytes written into the data blocks of file descriptor.
+
+
+4) fs_read(int fd,void *buf, int nbytes):
+
+   In fs_read, we are reading the number of  of data from file descriptor fd, then store data in buf and return number of bytes written in the file. For this, we extract the file table        attributes for given file descriptor from open file table directory. Then extract data block index from inode block array and extract the data from data block index using bs_read           function. If number of bytes is less than 512, we read the data and return the number bytes read from data block. Otherwise read the data blocks in loop and store the data in buffer and    return the number bytes read from data blocks of file descriptor..
+
+5) fs_seek(int fd, int offset):
+
+   In fs_seek, we are adjusting the file-pointer of file descriptor. Offset value is negative, so we are going back that offset value from current file-pointer position. 
+
+   Fileptr = fileptr + offset
+
+   If offset is bigger than current file pointer value, we should return the error without adjusting the file pointer.
+
+6) fs_close(int fd):
+ 
+   In fs_close, We are changing the state of file descriptor from open file table directory FSTATE_CLOSE.As open file tables holds 16 entries only, this entry will be used by another file     if open file table becomes full.
+  
+

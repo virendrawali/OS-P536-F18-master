@@ -1,0 +1,51 @@
+Assignment 5: Key value store
+
+ The program is to implement cache to store key and value pair and implement cache replacement policy to replace page when cache gets full. Cache functionalities are as below:
+
+1) kv_init()
+   In kv_init, we are creating buffer pools which will be used by kv_set to store key and value pairs. It also initialises the cache information table, cache table and    LFU table.
+
+2) kv_set
+   We are using this function to store key and value in cache. It requests memory blocks as per size of key and value from buffer pools which we have created in           kv_init() to allocate memory to store key and value. If user has updated the value for same key, then kv_set updates the value from cache to maintain the consistency   .kv_set handles the scenario where cache is full and user request a page which is not in the cache. In this case, kv_set calls LFU eviction policy which will provide   lease frequently accessed page which we can replace for new page. So kv_set insert the new page at the place vacated by cache replacement policy. It also maintains     the cache information like total number of successful set request, current cache size etc. Function will return 0 to indicate key-value is successfully stored in       cache otherwise it will return 1 for fail.
+
+3) kv_get
+   This function is used to retrieve value from cache. User will send the key and kv_get will return the value for corresponding key from the cache. It also maintains     the information such as cache hit and cache miss. On each successful get, LFU list is updated i.e. frequency count is incremented for requested key which will be       used for cache eviction.
+
+4) kv_delete
+   This function is used to remove page which will be selected by page eviction poilicy. The function frees the memory allocated to key-value and removes the entry from   cache and update LFU table. The empty space will be used to store new page requested by user. 
+
+5) kv_reset
+   The function resets all the tables by flushing all the entries from the table. 
+
+6) get_cache_info
+   This function is used to retreive cache information as below:
+
+   "total_hits"		Total number of successful get requests
+   "total_accesses"	Total number of get requests (including cache misses, etc.)
+   "total_set_success"	Total number of successful set requests
+   "cache_size"		Total memory footprint of your key-value store
+   "num_keys"		Number of keys stored in the cache
+   "total_evictions"	Number of items evicted
+
+   We keep the above information why doing the cache operation. So which above parameters we can get information about cache performance. 
+
+7) most_popular_keys   
+   This function will give us the most popular pages i.e. the pages which are frequently accessed from the cache.
+
+(*) Cache Eviction Policy (LFU):
+    I have implemented LFU i.e. Least Frequently Used cache replacement policy. LFU maintains the frequency of each page present in the cache to indicate which page is     visited frequently and which is not. This frequency count will help to evict the page from cache when cache gets full. The page which is not used frequently is used    as victim and will be evicted from cache and new page will be replaced at the place of evicted page.
+ 
+#Command to execute: cache
+
+Adaptive Replacement Cache Design:
+
+ARC is a dynamic page replacement policy which maintains 4 lists, one stores the pages which are referenced once in recent time i.e. acts as a regency list and the     second list keeps pages which are referenced twice or more in recent time i.e. acts as a frequency list and 2 ghosts lists b1 and b2 which are used to store the evictedpages from regency and frequency list respectively.
+
+In set, while inserting the key value in cache,insert key-value in t1 list(regency list) which stores key-value data for singly referenced key. The size of t1 should   hold at most c (size of cache). When cache gets full, t1 also gets full as t1 is holding all the singly referenced data. So when user sets new data, we should evict onepage from cache to make place for new key-value. So for this, evict LRU page of t1 and evict same page from cache. The evicted page should be kept in B1 ghost          cache(hold evicted pages from t1.) If b1 gets full, delete LRU entry from  b1. As in set, data will be referenced only once so we are manipulating only t1 and b1 here. If user want to set the different data to same key, update cache and removing previous key-value entry from t1 and store  new key-value in t1.
+
+In get, when user request for data for key, we first check the key in cache, if key present in t1 list then move the key-value in MRU of t2 as it referenced twice. In  this scenario we have to check if t2 is full or not, if t2 is full, we have remove the LRU page of t2 to MRU page b2. Similarly, we have to check if b2 is full or not, if full then we have to delete LRU page of B2. Secondly, If we found page in t2, remove page from t2 and move to MRU of t2. If we don't find key in cache, first we havesearch b1 list to check if given key is recently evicted from regency list or check in b2 list. 
+
+If the key is present in the b1 ghost cache, cache miss occurred. Then, update the value of P on the basis of learning rates parameters(delta1) i.e. increment P by 1 ifthe length of B1 is greater than the length of B2 the P =P+1(increase the size of T1) otherwise P =P + (|B2|/|B1|). Delete LRU page from T1 or T2 based on tuning       parameter and move to corresponding ghost cache. Lastly, move the page from B1 to MRU of T2.
+
+If the page is present in the B2 ghost cache, cache miss occurred. Update the value of P on the basis of learning rates parameters(delta1) i.e. increment P by 1 if the length of B2 is greater than the length of  B1 the P =P-1(increase the size of T2) otherwise P =P - (|B1|/|B2|). Delete LRU page from T1 or T2 based on tuning parameterand move to corresponding ghost cache. Lastly, move the page from B2 to MRU of T2. 
+

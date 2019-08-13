@@ -1,0 +1,85 @@
+
+1) FUTURE_EXCLUSIVE implementation
+
+This is the mode in which only two thread got involved. Producer thread will set the value of future and consumer thread will read and display the value written by the producer.
+
+In ProdCons snippet, initially, we are creating a future using the future_alloc method which is initializing all the values of the future_t structure. The user will    provide the name of the mode in which producer and consumer need to execute while creating it. Future will be created as below:
+ 
+           f_exclusive = future_alloc(FUTURE_EXCLUSIVE);
+ 
+After future creation, code snippet will first create consumer and then producer as below:
+ 
+           resume( create(future_cons, 1024, 20, "fcons1", 1, f_exclusive) );
+           resume( create(future_prod, 1024, 20, "fprod1", 2, f_exclusive, 1) );
+ 
+So when the consumer will be created, there will be no value present in the future, so the consumer will wait for the producer to set the value. Initially, the future  state has set to FUTURE_EMPTY when future_alloc is called. So when the consumer goes in the wait state, it sets the value of future state to FUTURE_WAITING to denote   that consumer is waiting for future and it waits in get_queue.
+
+When the producer will be created, it will check the state of future, if it's FUTURE_EMPTY, it will set the value of future and will change the future state to         FUTURE_READY to denote the future is ready with value and will complete the execution. Otherwise, if the state is FUTURE_WAITING, it will set the future value, make thestate to FUTURE_READY then removes the first consumer from get_queue where consumer process is waiting and then make the consumer process ready to consume the value setby the producer. As soon as, producer wakes up the consumer after setting the value, the consumer will then read the value from future and prints the value.
+
+The result of FUTURE_EXCLUSIVE mode:
+           	
+	  Consumed 1
+          Produced 1
+ 
+
+
+2) FUTURE_SHARED implementation
+
+In this mode there is a one-to-many relationship between threads i.e. one producer will produce the value and multiple consumers will get the value from the future.    Same as FUTURE_EXCLUSIVE, we are creating a future and initializing all structure variables with the mode is FUTURE_SHARED.
+
+         f_shared    = future_alloc(FUTURE_SHARED);
+ 
+In FUTURE_SHARE, multiple consumers are created. When the first consumer is created, the state of future will be FUTURE_EMPTY, as state denotes no value is set by      producer yet, it will change the state to FUTURE_WAITING to notify consumer is waiting in get_queue. As the future state is set to FUTURE_WAITING by the first consumer,all subsequent consumer will come and wait in get_queue.
+ 	
+	 resume( create(future_cons, 1024, 20, "fcons2", 1, f_shared) );
+ 	 resume( create(future_cons, 1024, 20, "fcons3", 1, f_shared) );
+ 	 resume( create(future_cons, 1024, 20, "fcons4", 1, f_shared) ); 
+ 	 resume( create(future_cons, 1024, 20, "fcons5", 1, f_shared) );
+ 	 resume( create(future_prod, 1024, 20, "fprod2", 2, f_shared, 2) );
+ 
+When the producer is created, it checks the state of future, if the state is set to FUTURE_EMPTY, it sets the value of future, changes state to FUTURE_READY to denote  the value has set by producer and terminates. If the state is set to FUTURE_WAITING by consumers( means consumers are waiting for the producer to set the value of      future) then producer sets the value of future, changes the state to FUTURE_READY and then wakes up all the consumers waiting in get_queue to fetch the value from      future.
+
+The result of FUTURE_SHARED mode:
+	
+	Consumed 2
+	Consumed 2
+	Consumed 2
+	Consumed 2
+	Produced 2
+
+In the above result, producer produced value 2 and this value is fetched by all consumers waiting in wait queue from future.
+
+
+3) FUTURE_QUEUE  implementation
+
+In this mode there is a many-to-many relationship between threads i.e. multiple producers will produce the value and multiple consumers will get the value from the     future. Same as FUTURE_EXCLUSIVE, we are creating a future and initializing all structure variables with the mode is FUTURE_QUEUE.
+
+        f_queue     = future_alloc(FUTURE_QUEUE);
+ 
+In FUTURE_QUEUE, multiple consumers are created. When the first consumer is created, the state of future will be FUTURE_EMPTY, FUTURE_EMPTY state denotes no value is   set by producer yet. The consumer will change the state to FUTURE_WAITING to notify consumer is waiting in get_queue. As the future state is set to FUTURE_WAITING by   the first consumer, all subsequent consumer will come and wait in get_queue.
+  	
+	resume( create(future_cons, 1024, 20, "fcons6", 1, f_queue) );
+  	resume( create(future_cons, 1024, 20, "fcons7", 1, f_queue) );
+  	resume( create(future_cons, 1024, 20, "fcons8", 1, f_queue) );
+  	resume( create(future_cons, 1024, 20, "fcons9", 1, f_queue) );
+  	resume( create(future_prod, 1024, 20, "fprod3", 2, f_queue, 3) );
+  	resume( create(future_prod, 1024, 20, "fprod4", 2, f_queue, 4) );
+  	resume( create(future_prod, 1024, 20, "fprod5", 2, f_queue, 5) );
+ 	resume( create(future_prod, 1024, 20, "fprod6", 2, f_queue, 6) );
+ 
+When the producer is created, it checks the state of future, if the state is set to FUTURE_EMPTY, it sets the value of future, changes state to FUTURE_READY to denote  the value has set by producer and terminates. If the state is set to FUTURE_WAITING by consumers (means consumers are waiting for the producer to set the value of      future) then producer sets the value of future, changes the state to FUTURE_READY and then wakes up one consumer waiting in get_queue to fetch the value from future andthen terminates. When the waiting consumer is woken up by the producer, it reads the value from future and checks whether any other consumers are waiting in get queue. If any consumers are waiting in get_queue then it changes state to FUTURE_WAITING to denote consumers are still waiting in get_queue. Then it checks if producers are   waiting in set_queue to set the value of future, if producers are waiting for set queue then consumer wakes up producer to produce next value.
+
+The result of FUTURE_QUEUE:
+	
+	Consumed 3
+	Produced 3
+	Consumed 4
+	Produced 4
+	Consumed 5
+	Produced 5
+	Consumed 6
+	Produced 6
+ 
+
+
+

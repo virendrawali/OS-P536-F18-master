@@ -1,0 +1,172 @@
+
+    The task is to implement the grep functionality i.e. to read file and print all the line containing the matching word. To achieve this task I used producer and         consumer paradigm with single producer and multiple consumers. In this design, producer is doing the work of reading the text file and feeding it to the consumer       thread and consumer processing the line. It is easier to synchronise processes in this design by semaphore and segregating the task to different thread makes easier    to handle threads as well.The program design is as follows:
+
+ 
+(*) Main Thread:
+
+    The program starts with the main program. It reads command line arguments which user has sent to the pargrep program. A user can provide input in the following         format:
+
+    I) pargrep [-t] <number_of_threads> <word_to_search> [<input_file_name>]
+ 
+    II) cat <input_file_name> | pargrep <word_to_search> 
+ 
+    A user can send 3 arguments as shown in (I), (1)first is number threads user wants to run (2) word which user wants to search in an input file and (3) input file.
+    The role of the main function is to create producer thread, consumer threads, initialize semaphore and mutex.
+
+ 
+
+(*) Producer Thread:
+
+    The main role of the producer is to read the input text file and provide the input to consumer threads for processing. Producer thread reads the line and inserts in    to the string buffer. As soon as the producer writes a line in the buffer, it notifies the consumer that buffer is ready for processing and consumer threads can        proceed for text processing. Similarly, as soon as consumer threads complete processing, it notifies produce to fill the buffer and again. This process continues       till producer stops producing data for the consumer.
+
+ 
+
+(*) Consumer Threads:
+
+    The main role of consumer threads is to process data send by producer i.e. matching the given word in input data and only extract those line which having matching      word. When the producer signals consumer threads about available data in the buffer, threads go for processing the line. Here I am using mutex so that only one         thread out of multiple threads can go in critical section i.e. check word in line and print if the matching word present in the line. So the mutex will ensure          mutual exclusion of critical section. After processing consumer signals producer to send more data for processing. In this way, I can achieve synchronous execution     of data by using semaphores.
+
+ 
+######################## Result of grep program ########################
+
+ 
+
+ [vwali@silo AOS_Assignment1]$ grep "whale" input2.txt|less
+
+  name a whale-fish is to be called in our tongue, leaving out, through
+
+  allusions to whales he could anyways find in any book whatsoever,
+
+  take the higgledy-piggledy whale statements, however authentic, in
+
+  “And God created great whales.” —_Genesis_.
+
+  “He visited this country also with a view of catching horse-whale,
+
+  brought some to the king.... The best whales were catched in his own
+
+  enter into the dreadful gulf of this monster’s (whale’s) mouth, are
+
+  “This whale’s liver was two cartloads.” —_Stowe’s Annals_.
+
+  “Touching that monstrous bulk of the whale or ork we have received
+
+  quantity of oil will be extracted out of one whale.” —_Ibid_.
+
+  “Very like a whale.” —_Hamlet_.
+
+ 
+
+######################## Result of pargrep program #######################
+
+ 
+
+[vwali@silo AOS_Assignment1]$ ./pargrep -t 2 whale input2.txt
+
+name a whale-fish is to be called in our tongue, leaving out, through
+
+ allusions to whales he could anyways find in any book whatsoever,
+
+ take the higgledy-piggledy whale statements, however authentic, in
+
+ “And God created great whales.” —_Genesis_.
+
+ “He visited this country also with a view of catching horse-whale,
+
+  brought some to the king.... The best whales were catched in his own
+
+  enter into the dreadful gulf of this monster’s (whale’s) mouth, are
+
+  “This whale’s liver was two cartloads.” —_Stowe’s Annals_.
+
+  “Touching that monstrous bulk of the whale or ork we have received
+
+  quantity of oil will be extracted out of one whale.” —_Ibid_.
+
+  “Very like a whale.” —_Hamlet_.
+
+ 
+
+(*) Performance Comparison:
+
+    Grep is giving output faster than the pargrep program. Grep is based in the Boyer-Moore algorithm and it executes very few instructions for each byte. Also instead     of using line oriented input, grep reads raw data into large buffers and only when it finds match algorithm look for bounding newline. On other hand, Pargrep           program is using getline function to read the input file line by line and then comparing each line with matching word. Moreover, the use of semaphore and mutex for     thread synchronization is taking a bit time. Below are some observations of grep and pargrep for different number threads. At n = 12, pargrep is running faster than    other thread combination.
+
+ 
+
+    Grep Output :
+
+    [vwali@silo AOS_Assignment1]$ time grep "whale" input6.txt|wc
+
+    46332  547056 3153456
+
+     real    0m0.066s
+     user    0m0.094s
+     sys     0m0.012s
+
+     Pargrep Output(input in  piped format):
+
+     [vwali@silo AOS_Assignment1]$ time cat ./input6.txt|./pargrep whale|wc
+
+     46332  547056 3153456
+   
+     real    0m4.248s
+     user    0m1.112s
+     sys     0m4.757s
+
+     Pargrep Output(single consumer thread):
+     
+     [vwali@silo AOS_Assignment1]$ time ./pargrep -t 1 whale input6.txt|wc
+
+     46332  547056 3153456
+
+     real    0m6.700s
+     user    0m1.376s
+     sys     0m5.324s
+
+ 
+     Pargrep Output(Three consumer thread):
+
+     [vwali@silo AOS_Assignment1]$ time ./pargrep -t 3 whale input6.txt|wc
+
+     46332  547056 3153456
+
+     real    0m6.149s
+     user    0m1.290s
+     sys     0m5.262s
+
+     Pargrep Output(Ten consumer thread):
+
+     [vwali@silo AOS_Assignment1]$ time ./pargrep -t 10 whale input6.txt|wc
+
+     46332  547056 3153456
+
+     real    0m5.779s
+     user    0m1.292s
+     sys     0m5.367s
+
+ 
+     Pargrep Output(Ten consumer thread):
+
+     [vwali@silo AOS_Assignment1]$ time ./pargrep -t 12 whale input6.txt|wc
+
+     46332  547056 3153456
+
+     real    0m5.178s
+     user    0m1.207s
+     sys     0m5.268s
+
+ 
+     Pargrep Output(Ten consumer thread):
+
+     [vwali@silo AOS_Assignment1]$ time ./pargrep -t 20 whale input6.txt|wc
+
+     46332  547056 3153456
+
+     real    0m6.575s
+     user    0m1.323s
+     sys     0m5.766s
+
+ 
+######################## References ##################################
+https://stackoverflow.com/questions/12629749/how-does-grep-run-so-fast
+http://www.csc.villanova.edu/~mdamian/threads/posixsem.html
+#####################################################################

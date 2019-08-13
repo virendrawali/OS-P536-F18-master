@@ -1,0 +1,98 @@
+Assignment 4: Memory allocation
+
+The purpose of the assignment is to implement memory allocator in Xinu. In this program, we are using buffer pools of different size(8,16,32,64 etc) from which we will be selecting a memory block for memory allocation.I have created 8 pools with each containing 20 memory block.
+
+(*)For example: If a user request for 22 bytes of memory, the program will select a memory block from 32bytes pool for storing.
+
+Following methods implemented for memory allocation:
+
+1) xmalloc_init()
+
+In this definition, I am creating buffer pools of different sizes(8,16,32,64 etc) with each pool containing 20 nodes. Each buffer pool is maintaining some attributes tokeep information about buffer pools(like poolid , pool_size , number_of_allocated_blocks, number_of_allocated_bytes, number_of_fragmented_bytes etc ). Buffer pools are created using mkbufpool functionality present in Xinu. Syntax of function is as below:
+
+                                                poolid = mkbufpool(byte_size, number_of_blocks)
+
+mkbufpool takes 2 arguments i.e. byte_size for which we want to create a pool and number of blocks in that pool. mkbufpool(8,20) will create a pool of 8 bytes having 20blocks in it. mkbufpool return poolid for created buffer pool. In init, we are creating buffer pools and initializing all attribute for buffer pools. Xmalloc_init()    should be run only one time, multiple call will create multiple pools. In Xinu, we can create maximum 20 pools.
+
+2) xmalloc(size)
+
+Users will be using this function to request memory from OS. In this function, I am using buffer pools created in xmalloc_init() to allocate memory for user memory     request.
+
+(*)For example: If a user request for 22 bytes of memory, the program will search for a memory block which will result in less internal fragmentation. i.e. for 22-byte    request program will choose 32 bytes of a block and not 64 bytes or more.
+
+I am using getbuf() function to get a memory block from the buffer pool. Syntax of getbuf is as below:
+
+                                         	address = getbuf(poolid)
+
+We need to pass poolid from which we want to select a memory block for memory allocation. getbuff will return the memory block to calling function to use the memory.   After selecting memory block, I am maintaining a structure variable for each pool which will be maintaining the current status of the pool. If user request memory      greater available pool size then function notifies user about no available memory and if there is no memory block avaiable for user request program is giving           notification and rerutning NULL to show no memory block is available for user memory request.
+
+3)  Xfree
+
+In this function, I am freeing the buffer which user will not be using in future so that it can be used for the further user request. Xinu has freebuf function to free the momory block, It takes the address of the momory block which we want to free and then add it to perticular buffer pool for reuse.
+
+						freebuf(address_of_buffer_block)
+  
+4) xheap_snapshot
+
+In this function, we are showing the current status of the heap. Below will be the heap status after 3 memory allocation request. I am just showing the status for poolswhich are used to allocate memory.
+
+(*)For example:
+
+User request: xmalloc(7), xmalloc(5), xmalloc(6)
+
+After 3 memory requests from user, the current status of pool be as below.
+
+1) Pool id is: 0
+
+2) Number of allocated nodes: 3
+
+3) Pool size: 8
+
+4) Fragmented bytes: 6
+
+5) Total allocated bytes: 18
+
+(*)Test case results:
+
+Memory request and free requests:
+
+void *mem1 = xmalloc(7);
+void *mem2 = xmalloc(5);
+void *mem3 = xmalloc(6);
+void *mem4 = xmalloc(13);
+void *mem5 = xmalloc(17);
+void *mem6 = xmalloc(10);
+void *mem7 = xmalloc(30);
+void *mem8 = xmalloc(56);
+xheap_snapshot();
+printf("\n");
+xfree(mem1);
+xheap_snapshot();
+printf("\n");
+xfree(mem5);
+xheap_snapshot();
+
+Result:
+
+system call: xmalloc
+pool_id=8, buffer_size=8, total_buffers=20, allocated_bytes=18, allocated_buffers=3, fragmented_bytes=6
+pool_id=9, buffer_size=16, total_buffers=20, allocated_bytes=23, allocated_buffers=2, fragmented_bytes=9
+pool_id=10, buffer_size=32, total_buffers=20, allocated_bytes=47, allocated_buffers=2, fragmented_bytes=17
+pool_id=11, buffer_size=64, total_buffers=20, allocated_bytes=56, allocated_buffers=1, fragmented_bytes=8
+
+pool_id=8, buffer_size=8, total_buffers=20, allocated_bytes=11, allocated_buffers=2, fragmented_bytes=5
+pool_id=9, buffer_size=16, total_buffers=20, allocated_bytes=23, allocated_buffers=2, fragmented_bytes=9
+pool_id=10, buffer_size=32, total_buffers=20, allocated_bytes=47, allocated_buffers=2, fragmented_bytes=17
+pool_id=11, buffer_size=64, total_buffers=20, allocated_bytes=56, allocated_buffers=1, fragmented_bytes=8
+
+pool_id=8, buffer_size=8, total_buffers=20, allocated_bytes=11, allocated_buffers=2, fragmented_bytes=5
+pool_id=9, buffer_size=16, total_buffers=20, allocated_bytes=23, allocated_buffers=2, fragmented_bytes=9
+pool_id=10, buffer_size=32, total_buffers=20, allocated_bytes=30, allocated_buffers=1, fragmented_bytes=2
+pool_id=11, buffer_size=64, total_buffers=20, allocated_bytes=56, allocated_buffers=1, fragmented_bytes=8
+
+
+(I) How to run program:
+
+Created xsh_xmalloc.c file in shell directory which can be executed by xmalloc command. xmalloc.h header file is created in include folder and implementaion of         functions is in xmalloc.c file in system directory.
+
+Command to run on Xinu: xmalloc  
